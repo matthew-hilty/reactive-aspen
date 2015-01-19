@@ -1,0 +1,77 @@
+{ isArray, isObject } = require './utilities'
+
+module.exports = (getEventStream, getProperty) ->
+  eventStreamRegex = /^\$/
+  switches         = []
+
+  _blur = \capsule ->
+    capsule.event.target.blur () if capsule.type == 'link'
+
+  connectPortsToBuses = \triplets ->
+    triplets.forEach connectIntakeToTarget
+
+  connectIntakeToTarget = \record ->
+    { config, handler, reactViewLabel, tgtBusLabel, type } =
+      interpretRecord record
+
+    dispatcher = getDispatcher tgtBusLabel
+
+    manageDispatcher (dispatcher, config)
+
+    switches.push
+      condition : getFilter (reactViewLabel, type, handler)
+      dispatch  : dispatchBy dispatcher
+
+  dispatchBy = \bus \capsule ->
+    bus.dispatch (capsule, bus.id)
+
+  eventStreamName? = \val ->
+    eventStreamRegex.test val
+
+  getDispatcher = \label ->
+    interpret = if eventStreamName? label then getEventStream else getProperty
+    interpret label
+
+  getFilter = (label, type, handler) -> (val) ->
+    val.label == label &&
+        (!type || val.type == type) &&
+        (!handler || val.handler == handler)
+
+  getTargetValue = \capsule ->
+    capsule|['event']|['target']|['value']
+
+  interpretRecord = \record ->
+    if isArray record
+      [tgtBusLabel, reactViewLabel, type, handler, manage?] = record
+
+      if isObject type
+        { blur, preventDefault, handler, type } = type
+      else
+        blur = preventDefault = manage?
+
+    else
+      { handler
+        reactViewLabel
+        blur
+        preventDefault
+        tgtBusLabel
+        type
+      } = record
+
+    config = { doBlur: blur, doPreventDefault: preventDefault }
+    { config, handler, reactViewLabel, tgtBusLabel, type }
+
+  manageDispatcher = (dispatcher, config) ->
+    { doBlur, doPreventDefault } = config
+    dispatcher.subscribe _blur if doBlur
+    dispatcher.subscribe _preventDefault if doPreventDefault
+
+  _preventDefault = \capsule ->
+    capsule.event.preventDefault () if capsule.event.preventDefault
+
+  relayReactEvents = \event ->
+    for swich in switches
+      { condition, dispatch } = swich
+      return dispatch event if condition event
+
+  { connectPortsToBuses, relayReactEvents }

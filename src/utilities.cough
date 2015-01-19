@@ -1,0 +1,78 @@
+dot = '.'
+
+ObjProto = Object.prototype
+
+compositeRegex = /\.[^\.]*\./
+keypathRegex   = /\.([^\.]*)(\.?.*)$/
+
+addComponent = (keypath, newComponent, recipient) ->
+  keys  = getKeys keypath
+  last  = keys.length - 1
+  proxy = recipient
+
+  for i in [0...last]
+    key = keys[i]
+    proxy[key] ?= {}
+    proxy = proxy[key]
+
+  proxy[keys[last]] = newComponent
+
+extend = (obj, mixins...) ->
+  for mixin in mixins
+    for own key, val of mixin
+      obj[key] = val
+  obj
+
+getComponent = (keypath, obj) ->
+  if isAtomicKeypath keypath
+    key = keypath.slice 1
+    shallowCopy obj[key]
+  else
+    [nextKey, nextKeypath] = processKeypath keypath
+    return null unless isObject obj[nextKey]
+    getComponent (nextKeypath, obj[nextKey])
+
+getKeys = \keypath ->
+  keypath.split(dot).slice(1)
+
+identity = \val ->
+  val
+
+isArray = Array.isArray
+
+isAtomicKeypath = \keypath ->
+  ! (compositeRegex.test keypath)
+
+hasType = \type \val ->
+  "[object #{type}]" == toString val
+
+[isObject, isString] = ['Object', 'String'].map hasType
+
+processKeypath = \keypath ->
+  keypathRegex.exec(keypath).slice(1, 3)
+
+shallowCopy = \val ->
+  switch
+    when isObject val
+      copy = {}
+      copy[key] = prop for own key, prop of val
+      copy
+    when isArray val
+      val.map identity
+    else
+      val
+
+toString = \val ->
+  ObjProto.toString.call val
+
+transformResult = (result, fn) ->
+  result = fn result
+
+module.exports = {
+  addComponent
+  extend
+  getComponent
+  isArray
+  isObject
+  isString
+}

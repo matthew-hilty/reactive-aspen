@@ -1,0 +1,63 @@
+{ isArray, isString }   = require './utilities'
+
+module.exports = \config ->
+  getDispatcher       = config.getDispatcher
+  pandoConnect        = config.connect
+  pandoOnValue        = config.onValue
+  terminusEventStream = config.terminusEventStream
+
+  _connect = (src, tgt, transform) ->
+    [_src, _tgt] = [src, tgt].map interpret
+    setAlias (_src, src)
+    setAlias (_tgt, tgt)
+    pandoConnect (_src, _tgt, transform)
+
+  connect = (sources, targets, thunk) ->
+    if isArray sources
+      connectMultiple (sources, targets, thunk ())
+    else
+      connectSingle (sources, targets, thunk ())
+
+  connectMultiple = (sources, targets, transforms) ->
+    if isArray targets
+      for tgt, i in targets
+        for src, j in sources
+          _connect (src, tgt, transforms[i][j])
+    else
+      for src, i in sources
+        _connect (src, targets, transforms[i])
+
+  connectSingle = (source, targets, transforms) ->
+    if isArray targets
+      for tgt, i in targets
+        _connect (source, tgt, transforms[i])
+    else
+      _connect (source, targets, transforms)
+
+  interpret = \value ->
+    if isString value then getDispatcher (value, false) else value
+
+  onEvent = (source, sink) ->
+    interpret(source).subscribe sink
+
+  onValue = (source, sink) ->
+    pandoOnValue ((interpret source), sink)
+
+  plugIntoTerminus = (source, transform) ->
+    connect (source, terminusEventStream, transform)
+
+  push = (label, val) ->
+    bus = interpret label
+    bus.dispatch (val, bus.id)
+
+  setAlias = (bus, val) ->
+    bus.setAlias val if isString val
+
+  {
+    connect
+    interpret
+    onEvent
+    onValue
+    plugIntoTerminus
+    push
+  }

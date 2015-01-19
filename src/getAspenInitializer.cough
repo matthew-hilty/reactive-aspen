@@ -1,0 +1,41 @@
+module.exports = \config ->
+  {
+    appStateProperty
+    blockTillReady
+    connectPortsToBuses
+    connectViewToController
+    doAsync
+    onValue
+    push
+    renderToDOM
+    terminusEventStream
+  } = config
+
+  node            = null
+  _topViewFactory = null
+
+  initialize = (appNodeID, topViewFactory, initialAppState, viewImports) ->
+    node = document.getElementById appNodeID
+    _topViewFactory = topViewFactory
+
+    reactElement = linkTogetherMVC (topViewFactory, initialAppState)
+    renderToDOM (reactElement, node)
+    connectPortsToBuses viewImports
+
+  linkTogetherMVC = (topViewFactory, appState) ->
+    push (appStateProperty, appState)      # Connect model and controller.
+    reactElement = topViewFactory appState # Connect model and view.
+    connectViewToController ()             # Connect view and controller.
+    reactElement
+
+  resetAppState = \transform ->
+    newAppState  = doAsync transform appStateProperty
+    reactElement = _linkTogetherMVC (_topViewFactory, newAppState)
+    _renderToDOM (reactElement, node)
+
+  _linkTogetherMVC = doAsync linkTogetherMVC
+  _renderToDOM     = blockTillReady renderToDOM
+
+  onValue (terminusEventStream, (blockTillReady resetAppState))
+
+  initialize
