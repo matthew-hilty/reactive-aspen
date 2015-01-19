@@ -1,0 +1,29 @@
+{
+  "name": "reactive-aspen",
+  "version": "0.0.0",
+  "description": "A library that incorporates React-like DOM-managers and FRP event-managers into a View-Controller framework",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matthew-hilty/reactive-aspen.git"
+  },
+  "keywords": [
+    "reactive",
+    "aspen",
+    "pando",
+    "react",
+    "DOM-manager",
+    "FRP",
+    "functional",
+    "reactive"
+  ],
+  "author": "Matthew Hilty",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/matthew-hilty/reactive-aspen/issues"
+  },
+  "homepage": "https://github.com/matthew-hilty/reactive-aspen"
+}
